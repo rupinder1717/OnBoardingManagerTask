@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="wwwroot\.env.production" />
     <Content Remove="wwwroot\assets\index-C9RUgW0Z.js" />
     <Content Remove="wwwroot\assets\index-DV8Kq9cv.js" />
     <Content Remove="wwwroot\assets\index-jDWxQNKJ.css" />
@@ -45,7 +44,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\.env.production" />
     <None Include="wwwroot\assets\index-C9RUgW0Z.js" />
     <None Include="wwwroot\assets\index-DV8Kq9cv.js" />
     <None Include="wwwroot\assets\index-jDWxQNKJ.css" />

@@ -6,40 +6,41 @@ using StoreManagerApp.Server.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Register SQL Server DB context
+// ✅ Register SQLite DB context
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ✅ Register dependency injection services
+
+// ✅ Register application services (DI)
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 
-// ✅ Add Controllers
+// ✅ Add AutoMapper if you're using it (optional)
+// builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// ✅ Add controllers
 builder.Services.AddControllers();
 
-// ✅ Enable CORS (both local dev and deployed frontend)
+// ✅ Configure CORS to allow frontend access
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-            "https://localhost:4173", // ✅ Vite dev server
-            "https://storemanagerappclient20250710.azurestaticapps.net" // ✅ Replace with your real frontend Azure URL
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy.WithOrigins("https://localhost:4173", "https://storemanagerappclient20250710.azurestaticapps.net")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
-// ✅ Swagger/OpenAPI for dev
+// ✅ Add Swagger/OpenAPI for development
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ✅ Enable Swagger in development only
+// ✅ Enable Swagger only in development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -48,20 +49,15 @@ if (app.Environment.IsDevelopment())
 
 // ✅ Middleware pipeline
 app.UseHttpsRedirection();
-
-// ✅ Apply CORS before routing
 app.UseCors("AllowFrontend");
-
 app.UseAuthorization();
 
-// ✅ Static files & fallback routing (for React SPA support if co-hosted)
-app.UseDefaultFiles();
+app.UseDefaultFiles();         // For static web hosting (optional)
 app.UseStaticFiles();
 
-// ✅ Map controller routes
 app.MapControllers();
 
-// ✅ Fallback to index.html for React routing
+// ✅ SPA fallback (optional if using React routing)
 app.MapFallbackToFile("index.html");
 
-app.Run();
+app.Run(); 
