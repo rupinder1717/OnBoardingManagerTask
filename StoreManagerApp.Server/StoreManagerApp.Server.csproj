@@ -1,57 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <SpaRoot>..\storemanagerapp.client</SpaRoot>
-    <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
-    <SpaProxyServerUrl>https://localhost:51100</SpaProxyServerUrl>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<SpaRoot>..\storemanagerapp.client</SpaRoot>
+		<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
+		<SpaProxyServerUrl>https://localhost:53302</SpaProxyServerUrl>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Content Remove="wwwroot\assets\index-C9RUgW0Z.js" />
-    <Content Remove="wwwroot\assets\index-DV8Kq9cv.js" />
-    <Content Remove="wwwroot\assets\index-jDWxQNKJ.css" />
-    <Content Remove="wwwroot\assets\index-mwFK-8Gv.js" />
-    <Content Remove="wwwroot\assets\index-wh3NIEKr.js" />
-    <Content Remove="wwwroot\assets\index-ZgHqeDmN.js" />
-    <Content Remove="wwwroot\index.html" />
-    <Content Remove="wwwroot\vite.svg" />
-  </ItemGroup>
+	<ItemGroup>
+	  <Content Remove="wwwroot\assets\index-B6h2k1ME.css" />
+	  <Content Remove="wwwroot\assets\index-CiZKsoGS.js" />
+	  <Content Remove="wwwroot\index.html" />
+	  <Content Remove="wwwroot\vite.svg" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SpaProxy">
-      <Version>8.*-*</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.6">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-  </ItemGroup>
+	
 
-  <ItemGroup>
-    <ProjectReference Include="..\storemanagerapp.client\storemanagerapp.client.esproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="8.*-*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="wwwroot\assets\index-C9RUgW0Z.js" />
-    <None Include="wwwroot\assets\index-DV8Kq9cv.js" />
-    <None Include="wwwroot\assets\index-jDWxQNKJ.css" />
-    <None Include="wwwroot\assets\index-mwFK-8Gv.js" />
-    <None Include="wwwroot\assets\index-wh3NIEKr.js" />
-    <None Include="wwwroot\assets\index-ZgHqeDmN.js" />
-    <None Include="wwwroot\index.html" />
-    <None Include="wwwroot\vite.svg" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\storemanagerapp.client\storemanagerapp.client.esproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+		</ProjectReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="wwwroot\assets\index-B6h2k1ME.css" />
+	  <None Include="wwwroot\assets\index-CiZKsoGS.js" />
+	  <None Include="wwwroot\index.html" />
+	  <None Include="wwwroot\vite.svg" />
+	</ItemGroup>
 
 </Project>

@@ -1,125 +1,101 @@
-﻿import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addStore, updateStore } from '../../redux/storeSlice';
-import { FaCheck } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+    createStore,
+    updateStore,
+    fetchStores,
+    setShowModal
+} from '../../redux/storeSlice';
 
-const StoreModal = ({ show, onClose, editStore, onSaved }) => {
+const StoreModal = () => {
     const dispatch = useDispatch();
-    const [store, setStore] = useState({ name: '', address: '' });
-    const [error, setError] = useState('');
+    const { showModal, modalType, selectedStore } = useSelector(state => state.stores);
+
+    const [name, setName] = useState('');
+    const [address, setAddress] = useState('');
 
     useEffect(() => {
-        if (editStore) {
-            setStore(editStore);
+        if (modalType === 'edit' && selectedStore) {
+            setName(selectedStore.name || '');
+            setAddress(selectedStore.address || '');
         } else {
-            setStore({ name: '', address: '' });
+            setName('');
+            setAddress('');
         }
-        setError('');
-    }, [editStore]);
+    }, [modalType, selectedStore]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const name = store.name.trim();
-        const address = store.address.trim();
+    const handleClose = () => dispatch(setShowModal(false));
 
-        if (!name || !address) {
-            setError("Both name and address are required.");
+    const handleSubmit = async () => {
+        const trimmedName = name.trim();
+        const trimmedAddress = address.trim();
+
+        if (!trimmedName) {
+            alert("Store name is required.");
             return;
         }
 
-        const formattedStore = { ...store, name, address };
 
-        try {
-            if (editStore) {
-                await dispatch(updateStore(formattedStore)).unwrap();
-            } else {
-                await dispatch(addStore(formattedStore)).unwrap();
-            }
-
-            if (onSaved) onSaved();
-            onClose();
-        } catch (err) {
-            setError("Something went wrong. Please try again.");
+        if (!trimmedAddress) {
+            alert("Address is required.");
+            return;
         }
+
+        
+        
+
+        const store = { name: trimmedName, address: trimmedAddress };
+
+        if (modalType === 'edit' && selectedStore?.id) {
+            await dispatch(updateStore({ ...store, id: selectedStore.id }));
+        } else {
+            await dispatch(createStore(store));
+        }
+
+        await dispatch(fetchStores());
+        handleClose();
     };
 
-    if (!show) return null;
-
     return (
-        <div
-            className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-            style={{
-                zIndex: 1055
-            }}
-        >
-            {/* Blur background */}
-            <div
-                className="position-absolute top-0 start-0 w-100 h-100"
-                style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    backdropFilter: 'blur(4px)',
-                    WebkitBackdropFilter: 'blur(4px)',
-                    zIndex: 1
-                }}
-            ></div>
+        <Modal show={showModal} onHide={handleClose} centered>
+            <Modal.Header closeButton>
+                <Modal.Title>{modalType === 'edit' ? 'Edit Store' : 'New Store'}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Form>
+                    <Form.Group className="mb-3" controlId="storeName">
+                        <Form.Label>Name</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Enter store name"
+                            required
+                            minLength={2}
+                        />
+                    </Form.Group>
 
-            {/* Modal Card */}
-            <div
-                className="rounded shadow position-relative"
-                style={{
-                    backgroundColor: '#fff',
-                    padding: '24px',
-                    width: '100%',
-                    maxWidth: '500px',
-                    zIndex: 2
-                }}
-            >
-                <form onSubmit={handleSubmit}>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h5 className="fw-bold mb-0">{editStore ? 'Edit' : 'Create'} Store</h5>
-                        <button type="button" className="btn-close" onClick={onClose}></button>
-                    </div>
-
-                    {error && <div className="alert alert-danger">{error}</div>}
-
-                    <label className="form-label fw-semibold small text-uppercase">Name</label>
-                    <input
-                        type="text"
-                        className="form-control mb-3"
-                        placeholder="Name"
-                        value={store.name}
-                        onChange={(e) => setStore({ ...store, name: e.target.value })}
-                        required
-                    />
-
-                    <label className="form-label fw-semibold small text-uppercase">Address</label>
-                    <input
-                        type="text"
-                        className="form-control mb-4"
-                        placeholder="Address"
-                        value={store.address}
-                        onChange={(e) => setStore({ ...store, address: e.target.value })}
-                        required
-                    />
-
-                    <div className="d-flex justify-content-end gap-2">
-                        <button
-                            type="button"
-                            className="btn btn-dark px-4"
-                            onClick={onClose}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="btn btn-success d-flex align-items-center gap-2 px-4"
-                        >
-                            {editStore ? 'Update' : 'Create'} <FaCheck />
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                    <Form.Group controlId="storeAddress">
+                        <Form.Label>Address</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            placeholder="Enter address"
+                            required
+                            minLength={5}
+                        />
+                    </Form.Group>
+                </Form>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={handleClose}>Cancel</Button>
+                <Button variant="success" onClick={handleSubmit}>
+                    {modalType === 'edit' ? 'Update' : 'Create'}
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
 };
 

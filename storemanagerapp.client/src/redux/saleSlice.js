@@ -1,130 +1,183 @@
 ﻿import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/Sale`;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_URL = `${BASE_URL}/sale`; // ✅ FIXED (removed duplicate /api)
 
-// 🔄 Fetch all sales
-export const fetchSales = createAsyncThunk('sales/fetch', async (_, { rejectWithValue }) => {
+// Async Thunks for Sale CRUD
+export const fetchSale = createAsyncThunk('sale/fetchSale', async (_, { rejectWithValue }) => {
     try {
-        const response = await axios.get(apiUrl);
-        return response.data;
+        const res = await axios.get(API_URL);
+        return res.data;
     } catch (err) {
         return rejectWithValue(err.response?.data || err.message);
     }
 });
 
-// ➕ Add a new sale
-export const addSale = createAsyncThunk('sales/add', async (sale, { rejectWithValue }) => {
+export const createSale = createAsyncThunk('sale/createSale', async (sale, { rejectWithValue }) => {
     try {
-        const cleanSale = {
-            customerId: sale.customerId,
-            productId: sale.productId,
-            storeId: sale.storeId,
-            dateSold: sale.dateSold
-        };
-        const response = await axios.post(apiUrl, cleanSale);
-        return response.data;
+        const res = await axios.post(API_URL, sale);
+        return res.data;
     } catch (err) {
         return rejectWithValue(err.response?.data || err.message);
     }
 });
 
-// ✏️ Update a sale (returns enriched sale from backend)
-export const updateSale = createAsyncThunk('sales/update', async (sale, { rejectWithValue }) => {
+export const updateSale = createAsyncThunk('sale/updateSale', async (sale, { rejectWithValue }) => {
     try {
-        const cleanSale = {
-            id: sale.id,
-            customerId: sale.customerId,
-            productId: sale.productId,
-            storeId: sale.storeId,
-            dateSold: sale.dateSold
-        };
-        const response = await axios.put(`${apiUrl}/${sale.id}`, cleanSale);
-        return response.data;
+        const res = await axios.put(`${API_URL}/${sale.id}`, sale);
+        return res.data;
     } catch (err) {
         return rejectWithValue(err.response?.data || err.message);
     }
 });
 
-// 🗑️ Delete a sale
-export const deleteSale = createAsyncThunk('sales/delete', async (id, { rejectWithValue }) => {
+export const deleteSale = createAsyncThunk('sale/deleteSale', async (id, { rejectWithValue }) => {
     try {
-        await axios.delete(`${apiUrl}/${id}`);
+        await axios.delete(`${API_URL}/${id}`);
         return id;
     } catch (err) {
         return rejectWithValue(err.response?.data || err.message);
     }
 });
 
+// Dropdown Data
+export const fetchCustomers = createAsyncThunk('sale/fetchCustomers', async (_, { rejectWithValue }) => {
+    try {
+        const res = await axios.get(`${BASE_URL}/customer`); // ✅ FIXED
+        return res.data;
+    } catch (err) {
+        return rejectWithValue(err.response?.data || err.message);
+    }
+});
+
+export const fetchProducts = createAsyncThunk('sale/fetchProducts', async (_, { rejectWithValue }) => {
+    try {
+        const res = await axios.get(`${BASE_URL}/product`); // ✅ FIXED
+        return res.data;
+    } catch (err) {
+        return rejectWithValue(err.response?.data || err.message);
+    }
+});
+
+export const fetchStores = createAsyncThunk('sale/fetchStores', async (_, { rejectWithValue }) => {
+    try {
+        const res = await axios.get(`${BASE_URL}/store`); // ✅ FIXED
+        return res.data;
+    } catch (err) {
+        return rejectWithValue(err.response?.data || err.message);
+    }
+});
+
+// Slice
 const saleSlice = createSlice({
-    name: 'sales',
+    name: 'sale',
     initialState: {
-        items: [],
+        sale: [],
+        customers: [],
+        products: [],
+        stores: [],
+        showModal: false,
+        modalType: 'create',
+        selectedSale: null,
+        showDeleteModal: false,
         loading: false,
-        error: null
+        error: null,
     },
-    reducers: {},
+    reducers: {
+        setShowModal: (state, action) => { state.showModal = action.payload; },
+        setModalType: (state, action) => { state.modalType = action.payload; },
+        setSelectedSale: (state, action) => { state.selectedSale = action.payload; },
+        setShowDeleteModal: (state, action) => { state.showDeleteModal = action.payload; },
+    },
     extraReducers: (builder) => {
         builder
-            // FETCH
-            .addCase(fetchSales.pending, (state) => {
+            // Fetch Sale
+            .addCase(fetchSale.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchSales.fulfilled, (state, action) => {
+            .addCase(fetchSale.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload;
+                state.sale = action.payload;
             })
-            .addCase(fetchSales.rejected, (state, action) => {
+            .addCase(fetchSale.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
 
-            // ADD
-            .addCase(addSale.pending, (state) => {
+            // Create
+            .addCase(createSale.pending, (state) => {
                 state.loading = true;
+                state.error = null;
             })
-            .addCase(addSale.fulfilled, (state, action) => {
+            .addCase(createSale.fulfilled, (state, action) => {
+                state.sale.push(action.payload);
                 state.loading = false;
-                state.items.push(action.payload);
             })
-            .addCase(addSale.rejected, (state, action) => {
+            .addCase(createSale.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
 
-            // UPDATE
+            // Update
             .addCase(updateSale.pending, (state) => {
                 state.loading = true;
+                state.error = null;
             })
             .addCase(updateSale.fulfilled, (state, action) => {
+                const idx = state.sale.findIndex(s => s.id === action.payload.id);
+                if (idx !== -1) state.sale[idx] = action.payload;
                 state.loading = false;
-                const index = state.items.findIndex(s => s.id === action.payload.id);
-                if (index !== -1) {
-                    state.items[index] = {
-                        ...state.items[index],
-                        ...action.payload // ✅ replace with flat DTO (with names)
-                    };
-                }
             })
             .addCase(updateSale.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
 
-            // DELETE
+            // Delete
             .addCase(deleteSale.pending, (state) => {
                 state.loading = true;
+                state.error = null;
             })
             .addCase(deleteSale.fulfilled, (state, action) => {
+                state.sale = state.sale.filter(s => s.id !== action.payload);
                 state.loading = false;
-                state.items = state.items.filter(s => s.id !== action.payload);
             })
             .addCase(deleteSale.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+
+            // Dropdowns
+            .addCase(fetchCustomers.fulfilled, (state, action) => {
+                state.customers = action.payload;
+            })
+            .addCase(fetchCustomers.rejected, (state, action) => {
+                state.error = action.payload;
+            })
+
+            .addCase(fetchProducts.fulfilled, (state, action) => {
+                state.products = action.payload;
+            })
+            .addCase(fetchProducts.rejected, (state, action) => {
+                state.error = action.payload;
+            })
+
+            .addCase(fetchStores.fulfilled, (state, action) => {
+                state.stores = action.payload;
+            })
+            .addCase(fetchStores.rejected, (state, action) => {
+                state.error = action.payload;
             });
     }
 });
+
+export const {
+    setShowModal,
+    setModalType,
+    setSelectedSale,
+    setShowDeleteModal
+} = saleSlice.actions;
 
 export default saleSlice.reducer;

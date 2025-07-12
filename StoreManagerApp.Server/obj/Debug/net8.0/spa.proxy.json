@@ -1,9 +1,9 @@
 {
 "SpaProxyServer": {
-"ServerUrl": "https://localhost:51100",
+"ServerUrl": "https://localhost:53302",
 "RedirectUrl": "",
 "LaunchCommand": "npm run dev",
-"WorkingDirectory": "C:\\Users\\rupin\\source\\repos\\StoreManagerApp\\StoreManagerApp.Server\\..\\storemanagerapp.client",
+"WorkingDirectory": "C:\\Users\\rupin\\Downloads\\StoreManagerApp-master\\StoreManagerApp-master\\StoreManagerApp.Server\\..\\storemanagerapp.client",
 "MaxTimeoutInSeconds": "120",
 "KeepRunning": "false"
 }

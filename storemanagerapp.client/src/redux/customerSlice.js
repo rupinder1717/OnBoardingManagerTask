@@ -1,56 +1,87 @@
-﻿import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/Customer`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/customer`;
 
-// Fetch all customers
-export const fetchCustomers = createAsyncThunk('customers/fetch', async (_, { rejectWithValue }) => {
-    try {
-        const response = await axios.get(apiUrl);
-        return response.data;
-    } catch (err) {
-        return rejectWithValue(err.response?.data || err.message);
+// Async Thunks
+export const fetchCustomers = createAsyncThunk(
+    'customers/fetchCustomers',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(API_URL);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
     }
-});
+);
 
-// Add a new customer
-export const addCustomer = createAsyncThunk('customers/add', async (customer, { rejectWithValue }) => {
-    try {
-        const response = await axios.post(apiUrl, customer);
-        return response.data;
-    } catch (err) {
-        return rejectWithValue(err.response?.data || err.message);
+export const createCustomer = createAsyncThunk(
+    'customers/createCustomer',
+    async (customer, { rejectWithValue }) => {
+        try {
+            const response = await axios.post(API_URL, customer);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
     }
-});
+);
 
-// Update customer (returns updated customer from server)
-export const updateCustomer = createAsyncThunk('customers/update', async (customer, { rejectWithValue }) => {
-    try {
-        const response = await axios.put(`${apiUrl}/${customer.id}`, customer);
-        return response.data;  // <-- important to return updated data
-    } catch (err) {
-        return rejectWithValue(err.response?.data || err.message);
+export const updateCustomer = createAsyncThunk(
+    'customers/updateCustomer',
+    async (customer, { rejectWithValue }) => {
+        try {
+            if (!customer.id) throw new Error("Missing ID for update");
+            const response = await axios.put(`${API_URL}/${customer.id}`, customer);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
     }
-});
+);
 
-// Delete customer
-export const deleteCustomer = createAsyncThunk('customers/delete', async (id, { rejectWithValue }) => {
-    try {
-        await axios.delete(`${apiUrl}/${id}`);
-        return id;
-    } catch (err) {
-        return rejectWithValue(err.response?.data || err.message);
+export const deleteCustomer = createAsyncThunk(
+    'customers/deleteCustomer',
+    async (id, { rejectWithValue }) => {
+        try {
+            await axios.delete(`${API_URL}/${id}`);
+            return id;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
     }
-});
+);
 
+// Initial state
+const initialState = {
+    customers: [],
+    loading: false,
+    error: null,
+    showModal: false,
+    showDeleteModal: false,
+    modalType: 'create',
+    selectedCustomer: null,
+};
+
+// Slice
 const customerSlice = createSlice({
     name: 'customers',
-    initialState: {
-        items: [],
-        loading: false,
-        error: null,
+    initialState,
+    reducers: {
+        setShowModal: (state, action) => {
+            state.showModal = action.payload;
+        },
+        setShowDeleteModal: (state, action) => {
+            state.showDeleteModal = action.payload;
+        },
+        setModalType: (state, action) => {
+            state.modalType = action.payload;
+        },
+        setSelectedCustomer: (state, action) => {
+            state.selectedCustomer = action.payload;
+        },
     },
-    reducers: {},
     extraReducers: (builder) => {
         builder
             // Fetch
@@ -60,25 +91,25 @@ const customerSlice = createSlice({
             })
             .addCase(fetchCustomers.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload;
+                state.customers = action.payload;
             })
             .addCase(fetchCustomers.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Failed to fetch customers';
+                state.error = action.payload;
             })
 
-            // Add
-            .addCase(addCustomer.pending, (state) => {
+            // Create
+            .addCase(createCustomer.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(addCustomer.fulfilled, (state, action) => {
+            .addCase(createCustomer.fulfilled, (state, action) => {
+                state.customers.push(action.payload);
                 state.loading = false;
-                state.items.push(action.payload);
             })
-            .addCase(addCustomer.rejected, (state, action) => {
+            .addCase(createCustomer.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Failed to add customer';
+                state.error = action.payload;
             })
 
             // Update
@@ -87,15 +118,15 @@ const customerSlice = createSlice({
                 state.error = null;
             })
             .addCase(updateCustomer.fulfilled, (state, action) => {
-                state.loading = false;
-                const index = state.items.findIndex(c => c.id === action.payload.id);
-                if (index !== -1) {
-                    state.items[index] = action.payload;  // updated data from server
+                const idx = state.customers.findIndex(c => c.id === action.payload.id);
+                if (idx !== -1) {
+                    state.customers[idx] = action.payload;
                 }
+                state.loading = false;
             })
             .addCase(updateCustomer.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Failed to update customer';
+                state.error = action.payload;
             })
 
             // Delete
@@ -104,14 +135,22 @@ const customerSlice = createSlice({
                 state.error = null;
             })
             .addCase(deleteCustomer.fulfilled, (state, action) => {
+                state.customers = state.customers.filter(c => c.id !== action.payload);
                 state.loading = false;
-                state.items = state.items.filter(c => c.id !== action.payload);
             })
             .addCase(deleteCustomer.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Failed to delete customer';
+                state.error = action.payload;
             });
-    }
+    },
 });
+
+// Exports
+export const {
+    setShowModal,
+    setShowDeleteModal,
+    setModalType,
+    setSelectedCustomer
+} = customerSlice.actions;
 
 export default customerSlice.reducer;

@@ -1,89 +1,106 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using StoreManagerApp.Server.DTOs;
-using StoreManagerApp.Server.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using StoreManagerApp.Server.Data;
+using StoreManagerApp.Server.Models;
+using StoreManagerApp.Server.Dtos;
 
 namespace StoreManagerApp.Server.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class ProductController : ControllerBase
     {
-        private readonly IProductService _productService;
+        private readonly AppDbContext _context;
 
-        public ProductController(IProductService productService)
+        public ProductController(AppDbContext context)
         {
-            _productService = productService;
+            _context = context;
         }
 
+        // GET: api/product
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
         {
-            try
+            var products = await _context.Products.ToListAsync();
+
+            var productDtos = products.Select(p => new ProductDto
             {
-                var products = await _productService.GetAllAsync();
-                return Ok(products);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to load products", details = ex.Message });
-            }
+                Id = p.Id,
+                Name = p.Name,
+                Price = p.Price
+            });
+
+            return Ok(productDtos);
         }
 
+        // GET: api/product/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ProductDto>> GetById(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound(new { message = $"Product with ID {id} not found." });
+
+            var dto = new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price
+            };
+
+            return Ok(dto);
+        }
+
+        // POST: api/product
         [HttpPost]
-        public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] ProductDto dto)
+        public async Task<ActionResult<ProductDto>> Create([FromBody] ProductDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            try
+            var product = new Product
             {
-                var createdProduct = await _productService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetProducts), new { id = createdProduct.Id }, createdProduct);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to create product", details = ex.Message });
-            }
+                Name = dto.Name,
+                Price = dto.Price
+            };
+
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+
+            dto.Id = product.Id;
+            return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
         }
 
+        // PUT: api/product/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] ProductDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (dto == null || id != dto.Id)
+                return BadRequest("Invalid product data.");
 
-            if (id != dto.Id)
-                return BadRequest(new { message = "Product ID mismatch." });
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound(new { message = $"Product with ID {id} not found." });
 
-            try
-            {
-                var result = await _productService.UpdateAsync(id, dto);
-                if (!result)
-                    return NotFound(new { message = "Product not found" });
+            product.Name = dto.Name;
+            product.Price = dto.Price;
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to update product", details = ex.Message });
-            }
+            await _context.SaveChangesAsync();
+            return Ok(dto);
         }
 
+        // DELETE: api/product/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                var result = await _productService.DeleteAsync(id);
-                if (!result)
-                    return NotFound(new { message = "Product not found" });
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound(new { message = $"Product with ID {id} not found." });
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to delete product", details = ex.Message });
-            }
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

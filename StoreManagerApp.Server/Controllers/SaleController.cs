@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using StoreManagerApp.Server.DTOs;
-using StoreManagerApp.Server.Services.Interfaces;
+using StoreManagerApp.Server.Dtos;
+using StoreManagerApp.Server.Services;
 
 namespace StoreManagerApp.Server.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class SaleController : ControllerBase
     {
         private readonly ISaleService _saleService;
@@ -15,88 +15,48 @@ namespace StoreManagerApp.Server.Controllers
             _saleService = saleService;
         }
 
+        // GET: api/sale
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<SaleDto>>> GetSales()
+        public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                var sales = await _saleService.GetAllAsync();
-                return Ok(sales);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to load sales", details = ex.Message });
-            }
+            var sales = await _saleService.GetAllAsync();
+            return Ok(sales);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<SaleDto>> GetSale(int id)
-        {
-            var sale = await _saleService.GetByIdAsync(id);
-            if (sale == null)
-                return NotFound(new { message = "Sale not found" });
-
-            return Ok(sale);
-        }
-
+        // POST: api/sale
         [HttpPost]
-        public async Task<ActionResult<SaleDto>> CreateSale([FromBody] SaleDto saleDto)
+        public async Task<IActionResult> Create([FromBody] CreateSaleDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            try
-            {
-                var createdSale = await _saleService.CreateAsync(saleDto);
-                if (createdSale == null)
-                    return BadRequest(new { message = "Invalid foreign key(s)." });
-
-                return CreatedAtAction(nameof(GetSale), new { id = createdSale.Id }, createdSale);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to create sale", details = ex.Message });
-            }
+            var result = await _saleService.CreateAsync(dto);
+            return Ok(result);
         }
 
+        // PUT: api/sale/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSale(int id, [FromBody] SaleDto saleDto)
+        public async Task<IActionResult> Update(int id, [FromBody] SaleDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (id != dto.Id)
+                return BadRequest("ID mismatch");
 
-            if (id != saleDto.Id)
-                return BadRequest(new { message = "Sale ID mismatch." });
+            var updated = await _saleService.UpdateAsync(id, dto);
+            if (updated == null)
+                return NotFound();
 
-            try
-            {
-                var updatedSale = await _saleService.UpdateAsync(id, saleDto);
-                if (updatedSale == null)
-                    return NotFound(new { message = "Sale not found" });
-
-                return Ok(updatedSale); // Optionally use NoContent() instead
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to update sale", details = ex.Message });
-            }
+            return Ok(updated);
         }
 
+        // DELETE: api/sale/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSale(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                var success = await _saleService.DeleteAsync(id);
-                if (!success)
-                    return NotFound(new { message = "Sale not found" });
+            var success = await _saleService.DeleteAsync(id);
+            if (!success)
+                return NotFound();
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to delete sale", details = ex.Message });
-            }
+            return NoContent();
         }
     }
 }

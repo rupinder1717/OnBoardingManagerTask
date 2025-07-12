@@ -1,63 +1,66 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StoreManagerApp.Server.Data;
+using StoreManagerApp.Server.Middleware;
 using StoreManagerApp.Server.Services;
-using StoreManagerApp.Server.Services.Implementations;
-using StoreManagerApp.Server.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Register SQLite DB context
+// Services
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// EF Core
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// DI Services
 
-// ✅ Register application services (DI)
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 
-// ✅ Add AutoMapper if you're using it (optional)
-// builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-// ✅ Add controllers
-builder.Services.AddControllers();
-
-// ✅ Configure CORS to allow frontend access
+// ✅ CORS - ALLOW your deployed frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://localhost:4173", "https://storemanagerappclient20250710.azurestaticapps.net")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+            "https://storemanagerappserver1-ftexcbgcfne8fyc4.australiaeast-01.azurewebsites.net"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
-// ✅ Add Swagger/OpenAPI for development
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 var app = builder.Build();
 
-// ✅ Enable Swagger only in development
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// ✅ Middleware pipeline
-app.UseHttpsRedirection();
+app.UseRouting();
+
+// ✅ Apply CORS here
 app.UseCors("AllowFrontend");
+
+app.UseHttpsRedirection();
 app.UseAuthorization();
 
-app.UseDefaultFiles();         // For static web hosting (optional)
-app.UseStaticFiles();
-
 app.MapControllers();
+app.MapFallbackToFile("/index.html");
 
-// ✅ SPA fallback (optional if using React routing)
-app.MapFallbackToFile("index.html");
+// Optional DB init
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
-app.Run(); 
+Console.WriteLine("✅ Deployed with correct CORS!");
+
+app.Run();

@@ -1,170 +1,145 @@
 ﻿import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { addSale, updateSale } from '../../redux/saleSlice';
-import { FaCheck } from 'react-icons/fa';
 
-const SaleModal = ({ show, onClose, editSale, onSaved }) => {
+import {
+    createSale,
+    updateSale,
+    fetchSale,
+    setShowModal
+} from '../../redux/saleSlice';
+
+import { fetchCustomers } from '../../redux/customerSlice';
+import { fetchProducts } from '../../redux/productSlice';
+import { fetchStores } from '../../redux/storeSlice';
+
+const SaleModal = () => {
     const dispatch = useDispatch();
-    const customers = useSelector(state => state.customers.items);
-    const products = useSelector(state => state.products.items);
-    const stores = useSelector(state => state.stores.items);
 
-    const [sale, setSale] = useState({
-        customerId: '',
-        productId: '',
-        storeId: '',
-        dateSold: ''
-    });
-    const [error, setError] = useState(null);
+    // Get sale modal state
+    const { showModal, modalType, selectedSale } = useSelector(state => state.sale);
 
+    const customers = useSelector(state => state.customers.customers);
+    const products = useSelector(state => state.products.products);
+    const stores = useSelector(state => state.stores.stores);
+
+
+    const [customerId, setCustomerId] = useState('');
+    const [productId, setProductId] = useState('');
+    const [storeId, setStoreId] = useState('');
+    const [dateSold, setDateSold] = useState('');
+
+    // Load dropdown data when modal opens
     useEffect(() => {
-        if (editSale) {
-            setSale({
-                id: editSale.id,
-                customerId: editSale.customerId?.toString() || '',
-                productId: editSale.productId?.toString() || '',
-                storeId: editSale.storeId?.toString() || '',
-                dateSold: editSale.dateSold ? editSale.dateSold.split('T')[0] : ''
-            });
-        } else {
-            setSale({ customerId: '', productId: '', storeId: '', dateSold: '' });
+        if (showModal) {
+            dispatch(fetchCustomers());
+            dispatch(fetchProducts());
+            dispatch(fetchStores());
         }
-        setError(null);
-    }, [editSale]);
+    }, [dispatch, showModal]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
+    // Populate form for edit
+    useEffect(() => {
+        if (modalType === 'edit' && selectedSale) {
+            setCustomerId(selectedSale.customerId);
+            setProductId(selectedSale.productId);
+            setStoreId(selectedSale.storeId);
+            setDateSold(selectedSale.dateSold.slice(0, 10)); // format: yyyy-mm-dd
+        } else {
+            setCustomerId('');
+            setProductId('');
+            setStoreId('');
+            setDateSold('');
+        }
+    }, [modalType, selectedSale]);
 
-        const { customerId, productId, storeId, dateSold } = sale;
+    const handleClose = () => dispatch(setShowModal(false));
 
+    const handleSubmit = async () => {
         if (!customerId || !productId || !storeId || !dateSold) {
-            setError("All fields are required.");
+            alert("Please fill out all fields.It is mandatory");
             return;
         }
 
-        const formattedSale = {
-            customerId: parseInt(customerId),
-            productId: parseInt(productId),
-            storeId: parseInt(storeId),
-            dateSold: new Date(dateSold).toISOString()
-        };
+        const sale = { customerId, productId, storeId, dateSold };
 
-        if (editSale?.id) {
-            formattedSale.id = editSale.id;
+        if (modalType === 'edit') {
+            await dispatch(updateSale({ ...selectedSale, ...sale }));
+        } else {
+            await dispatch(createSale(sale));
         }
 
-        try {
-            if (editSale) {
-                await dispatch(updateSale(formattedSale)).unwrap();
-            } else {
-                await dispatch(addSale(formattedSale)).unwrap();
-            }
-
-            if (onSaved) onSaved();
-            onClose();
-        } catch (err) {
-            console.error("Sale submission failed:", err);
-            setError("Failed to save sale. Please try again.");
-        }
+        await dispatch(fetchSale());
+        handleClose();
     };
 
-    if (!show) return null;
-
     return (
-        <div
-            className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-            style={{ zIndex: 1055 }}
-        >
-            {/* Blurred Background */}
-            <div
-                className="position-absolute top-0 start-0 w-100 h-100"
-                style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    backdropFilter: 'blur(4px)',
-                    WebkitBackdropFilter: 'blur(4px)',
-                    zIndex: 1
-                }}
-            ></div>
+        <Modal show={showModal} onHide={handleClose} centered>
+            <Modal.Header closeButton>
+                <Modal.Title>{modalType === 'edit' ? 'Edit Sale' : 'New Sale'}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Form>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Customer</Form.Label>
+                        <Form.Select
+                            value={customerId}
+                            onChange={(e) => setCustomerId(e.target.value)}
+                            required
+                        >
+                            <option value="">Select Customer</option>
+                            {Array.isArray(customers) && customers.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
 
-            {/* Modal Content */}
-            <div
-                className="rounded shadow position-relative"
-                style={{
-                    backgroundColor: '#fff',
-                    padding: '24px',
-                    width: '100%',
-                    maxWidth: '500px',
-                    zIndex: 2
-                }}
-            >
-                <form onSubmit={handleSubmit}>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h5 className="fw-bold mb-0">{editSale ? 'Edit' : 'Create'} Sale</h5>
-                        <button type="button" className="btn-close" onClick={onClose}></button>
-                    </div>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Product</Form.Label>
+                        <Form.Select
+                            value={productId}
+                            onChange={(e) => setProductId(e.target.value)}
+                            required
+                        >
+                            <option value="">Select Product</option>
+                            {Array.isArray(products) && products.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
 
-                    {error && <div className="alert alert-danger">{error}</div>}
+                    <Form.Group className="mb-2">
+                        <Form.Label>Store</Form.Label>
+                        <Form.Select
+                            value={storeId}
+                            onChange={(e) => setStoreId(e.target.value)}
+                            required
+                        >
+                            <option value="">Select Store</option>
+                            {Array.isArray(stores) && stores.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
 
-                    <label className="form-label fw-semibold small text-uppercase">Customer</label>
-                    <select
-                        className="form-select mb-3"
-                        value={sale.customerId}
-                        onChange={(e) => setSale({ ...sale, customerId: e.target.value })}
-                        required
-                    >
-                        <option value="">Select Customer</option>
-                        {customers.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
-
-                    <label className="form-label fw-semibold small text-uppercase">Product</label>
-                    <select
-                        className="form-select mb-3"
-                        value={sale.productId}
-                        onChange={(e) => setSale({ ...sale, productId: e.target.value })}
-                        required
-                    >
-                        <option value="">Select Product</option>
-                        {products.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </select>
-
-                    <label className="form-label fw-semibold small text-uppercase">Store</label>
-                    <select
-                        className="form-select mb-3"
-                        value={sale.storeId}
-                        onChange={(e) => setSale({ ...sale, storeId: e.target.value })}
-                        required
-                    >
-                        <option value="">Select Store</option>
-                        {stores.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                    </select>
-
-                    <label className="form-label fw-semibold small text-uppercase">Date Sold</label>
-                    <input
-                        type="date"
-                        className="form-control mb-4"
-                        value={sale.dateSold}
-                        onChange={(e) => setSale({ ...sale, dateSold: e.target.value })}
-                        required
-                    />
-
-                    <div className="d-flex justify-content-end gap-2">
-                        <button type="button" className="btn btn-dark px-4" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-success d-flex align-items-center gap-2 px-4">
-                            {editSale ? 'Update' : 'Create'} <FaCheck />
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Date Sold</Form.Label>
+                        <Form.Control
+                            type="date"
+                            value={dateSold}
+                            onChange={(e) => setDateSold(e.target.value)}
+                            required
+                        />
+                    </Form.Group>
+                </Form>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={handleClose}>Cancel</Button>
+                <Button variant="success" onClick={handleSubmit}>
+                    {modalType === 'edit' ? 'Update' : 'Create'}
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
 };
 
