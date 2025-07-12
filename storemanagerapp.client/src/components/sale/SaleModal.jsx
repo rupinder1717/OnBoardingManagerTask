@@ -15,21 +15,17 @@ import { fetchStores } from '../../redux/storeSlice';
 
 const SaleModal = () => {
     const dispatch = useDispatch();
-
-    // Get sale modal state
     const { showModal, modalType, selectedSale } = useSelector(state => state.sale);
-
     const customers = useSelector(state => state.customers.customers);
     const products = useSelector(state => state.products.products);
     const stores = useSelector(state => state.stores.stores);
-
 
     const [customerId, setCustomerId] = useState('');
     const [productId, setProductId] = useState('');
     const [storeId, setStoreId] = useState('');
     const [dateSold, setDateSold] = useState('');
+    const [errors, setErrors] = useState({});
 
-    // Load dropdown data when modal opens
     useEffect(() => {
         if (showModal) {
             dispatch(fetchCustomers());
@@ -38,7 +34,6 @@ const SaleModal = () => {
         }
     }, [dispatch, showModal]);
 
-    // Populate form for edit
     useEffect(() => {
         if (modalType === 'edit' && selectedSale) {
             setCustomerId(selectedSale.customerId);
@@ -51,13 +46,23 @@ const SaleModal = () => {
             setStoreId('');
             setDateSold('');
         }
+        setErrors({});
     }, [modalType, selectedSale]);
 
-    const handleClose = () => dispatch(setShowModal(false));
+    const handleClose = () => {
+        dispatch(setShowModal(false));
+        setErrors({});
+    };
 
     const handleSubmit = async () => {
-        if (!customerId || !productId || !storeId || !dateSold) {
-            alert("Please fill out all fields.It is mandatory");
+        const newErrors = {};
+        if (!customerId) newErrors.customerId = "Customer is required.";
+        if (!productId) newErrors.productId = "Product is required.";
+        if (!storeId) newErrors.storeId = "Store is required.";
+        if (!dateSold) newErrors.dateSold = "Date Sold is required.";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
@@ -85,13 +90,14 @@ const SaleModal = () => {
                         <Form.Select
                             value={customerId}
                             onChange={(e) => setCustomerId(e.target.value)}
-                            required
+                            isInvalid={!!errors.customerId}
                         >
                             <option value="">Select Customer</option>
                             {Array.isArray(customers) && customers.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </Form.Select>
+                        <Form.Control.Feedback type="invalid">{errors.customerId}</Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-2">
@@ -99,13 +105,14 @@ const SaleModal = () => {
                         <Form.Select
                             value={productId}
                             onChange={(e) => setProductId(e.target.value)}
-                            required
+                            isInvalid={!!errors.productId}
                         >
                             <option value="">Select Product</option>
                             {Array.isArray(products) && products.map(p => (
                                 <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </Form.Select>
+                        <Form.Control.Feedback type="invalid">{errors.productId}</Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-2">
@@ -113,13 +120,14 @@ const SaleModal = () => {
                         <Form.Select
                             value={storeId}
                             onChange={(e) => setStoreId(e.target.value)}
-                            required
+                            isInvalid={!!errors.storeId}
                         >
                             <option value="">Select Store</option>
                             {Array.isArray(stores) && stores.map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </Form.Select>
+                        <Form.Control.Feedback type="invalid">{errors.storeId}</Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-2">
@@ -128,8 +136,9 @@ const SaleModal = () => {
                             type="date"
                             value={dateSold}
                             onChange={(e) => setDateSold(e.target.value)}
-                            required
+                            isInvalid={!!errors.dateSold}
                         />
+                        <Form.Control.Feedback type="invalid">{errors.dateSold}</Form.Control.Feedback>
                     </Form.Group>
                 </Form>
             </Modal.Body>

@@ -14,6 +14,7 @@ const StoreModal = () => {
 
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (modalType === 'edit' && selectedStore) {
@@ -23,27 +24,26 @@ const StoreModal = () => {
             setName('');
             setAddress('');
         }
+        setErrors({});
     }, [modalType, selectedStore]);
 
-    const handleClose = () => dispatch(setShowModal(false));
+    const handleClose = () => {
+        dispatch(setShowModal(false));
+        setErrors({});
+    };
 
     const handleSubmit = async () => {
         const trimmedName = name.trim();
         const trimmedAddress = address.trim();
+        const newErrors = {};
 
-        if (!trimmedName) {
-            alert("Store name is required.");
+        if (!trimmedName) newErrors.name = "Store name is required.";
+        if (!trimmedAddress) newErrors.address = "Address is required.";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
-
-
-        if (!trimmedAddress) {
-            alert("Address is required.");
-            return;
-        }
-
-        
-        
 
         const store = { name: trimmedName, address: trimmedAddress };
 
@@ -71,21 +71,21 @@ const StoreModal = () => {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Enter store name"
-                            required
-                            minLength={2}
+                            isInvalid={!!errors.name}
                         />
+                        <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
                     </Form.Group>
 
-                    <Form.Group controlId="storeAddress">
+                    <Form.Group controlId="storeAddress" className="mb-3">
                         <Form.Label>Address</Form.Label>
                         <Form.Control
                             type="text"
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                             placeholder="Enter address"
-                            required
-                            minLength={5}
+                            isInvalid={!!errors.address}
                         />
+                        <Form.Control.Feedback type="invalid">{errors.address}</Form.Control.Feedback>
                     </Form.Group>
                 </Form>
             </Modal.Body>

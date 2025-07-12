@@ -14,36 +14,41 @@ const ProductModal = () => {
 
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (modalType === 'edit' && selectedProduct) {
             setName(selectedProduct.name || '');
-            setPrice(selectedProduct.price || '');
+            setPrice(selectedProduct.price?.toString() || '');
         } else {
             setName('');
             setPrice('');
         }
+        setErrors({});
     }, [modalType, selectedProduct]);
 
-    const handleClose = () => dispatch(setShowModal(false));
+    const handleClose = () => {
+        dispatch(setShowModal(false));
+        setErrors({});
+    };
 
     const handleSubmit = async () => {
         const trimmedName = name.trim();
         const numericPrice = parseFloat(price);
+        const newErrors = {};
 
         if (!trimmedName) {
-            alert("Product name is required.");
-            return;
+            newErrors.name = "Product name is required.";
         }
-
 
         if (price === '' || isNaN(numericPrice)) {
-            alert("Price is required and must be a valid number.");
-            return;
+            newErrors.price = "Price is required and must be a valid number.";
+        } else if (numericPrice <= 0) {
+            newErrors.price = "Price must be greater than 0.";
         }
 
-        if (numericPrice <= 0) {
-            alert("Price must be greater than 0.");
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
@@ -76,9 +81,11 @@ const ProductModal = () => {
                             placeholder="Enter product name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            required
-                            minLength={2}
+                            isInvalid={!!errors.name}
                         />
+                        <Form.Control.Feedback type="invalid">
+                            {errors.name}
+                        </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3" controlId="productPrice">
@@ -89,9 +96,11 @@ const ProductModal = () => {
                             placeholder="Enter price"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
-                            required
-                            min={0.01}
+                            isInvalid={!!errors.price}
                         />
+                        <Form.Control.Feedback type="invalid">
+                            {errors.price}
+                        </Form.Control.Feedback>
                     </Form.Group>
                 </Form>
             </Modal.Body>
